@@ -9,6 +9,7 @@ app.get('/', (req, res) => {
 
 app.get('/metrics', (req, res) => {
   utils.log(`${req.url} requested from ${req.ip}`)
+  
   res.send(`Hello ${req.ip}`);
   // retrieve metrics and display them here.
 });
@@ -16,20 +17,39 @@ app.get('/metrics', (req, res) => {
 app.get('/ping/:host', (req, res) => {
     utils.log(`${req.url} requested from ${req.ip}`)
     if ('host' in req.params) {
-        result = utils.icmpPing(req.params['host'])
-        msg = `No response from ${req.params['host']}`
-        if (result) {
-            msg = `Received response from ${req.params['host']}`
+        var result = utils.icmpPing(req.params['host'])
+        var responseBody = {
+            "output": undefined
         }
-        res.send(msg)
+        result.then((pingResponse) => {
+            responseBody["alive"] = pingResponse.alive
+            responseBody["output"] = pingResponse.output
+            res.json(responseBody)
+        }).catch((error) => {
+            var msg = `Failed to run ping of ${req.params['host']}: ${error}`
+            responseBody["error"] = msg
+            res.json(responseBody)
+            console.log(msg)
+        });
     }
     else {
-        res.send("Missing host parameter.")
+        res.json({"error": "Missing host parameter."})
+        // res.send("Missing host parameter.")
     }
 });
 
 // Listen to the App Engine-specified port, or 8080 otherwise
 const PORT = process.env.PORT || 8080;
+
+// Load config from the specified config file path or just use config.yaml.
+const configPath = process.env.CONFIG || 'config.yaml'
+const config = utils.readConfig(configPath)
+
+
+// @TODO Instantiate an in-memory datastore
+
+// @TODO Use the config to instantiate a couple of workers.
+
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}...`);
 });

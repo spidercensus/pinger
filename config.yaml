@@ -1,0 +1,11 @@
+hosts:
+  "google.com":
+    icmp: {}
+    tcp:
+      - 443
+      - 80
+  "localhost":
+    icmp: {}
+    tcp:
+      - 443
+      - 80
