@@ -102,8 +102,8 @@ async function gatherMetrics(config, database){
                         db.writeMetric(database, host, checkName, pingResponse.time, () => {log(`wrote ${checkName} result=${pingResponse.time} to database for ${host}.`)})
                     }
                 })
-            } else if (checkName in ['udp', 'tcp']){
-                Object.entries(checkContents).forEach((_, port) => {
+            } else if (checkName == 'tcp' || checkName == 'udp'){
+                Object.entries(checkContents).forEach(([_, port]) => {
                     connectCheck(host, checkName, port)
                 });
             }
@@ -112,7 +112,7 @@ async function gatherMetrics(config, database){
 }
 
 function connectCheck(host, protocol, port) {
-    log(`connectCheck is not yet implemented. It was called with host=${host}, protocol=${port}, port=${port}`)
+    log(`connectCheck is not yet implemented. It was called with host=${host}, protocol=${protocol}, port=${port}`)
 }
 
 module.exports.log = log
