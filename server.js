@@ -17,7 +17,20 @@ app.get('/metrics.json', (req, res) => {
     db.dumpMetrics(database, (results) => {
         res.json(results)
     })
+});
 
+app.get('/metrics', (req, res) => {
+    utils.log(`${req.url} requested from ${req.ip}`)
+    db.dumpMetrics(database, (results) => {
+        bodyArray = Array(results.length)
+        idx = 0
+        Object.entries(results).forEach(([key, value]) => {
+            bodyArray[idx] = `${key} ${value}`;
+            idx++;
+        })
+
+        res.send(bodyArray.join("\n"))
+    })
 });
 
 app.get('/ping/:host', (req, res) => {
