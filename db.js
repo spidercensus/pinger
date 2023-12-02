@@ -6,22 +6,19 @@ function getDatabase(path) {
     return new level.ClassicLevel(path, { valueEncoding: 'json' });
 }
 
-function dbKeyForValue(host, check, check_port) {
-    const key = `${host}/${check}/${check_port}`;
+function dbKeyForValue(host, check) {
+    // tcp443{host="myserver"} 0.951
+    const key = `${check}{host=${host}}`
     console.log(`dbKeyForValue: ${key}`)
     return key
 }
 
-// async function writeMetric(db, host, check, value, callback) {
-//     return await writeMetric(db, host, check, check_port, 0, value, callback)
-// }
-async function writeMetric(db, host, check, check_port, value, callback) {
-    const key = dbKeyForValue(host, check, check_port);
-    return await db.put(key, value, callback);
+async function writeMetric(db, host, check, value, callback) {
+    return await db.put(dbKeyForValue(host, check), value, callback);
 }
 
-async function getMetric(db, host, check, check_port, callback) {
-    const key = dbKeyForValue(host, check, check_port);
+async function getMetric(db, host, check, callback) {
+    const key = dbKeyForValue(host, check);
     return await db.get(key, callback);
 }
 

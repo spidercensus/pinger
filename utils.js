@@ -45,13 +45,13 @@ function readConfig(path) {
             if (checkName == "icmp") {
                 // no problem.
             }
-            else if (checkName == "tcp") {
+            else if (checkName == "tcp" || checkName == "udp") {
                 Object.entries(checkContents).forEach(([_, port]) => {
-                // validate each specific port is numeric and < 65536 and < 0
-                if (typeof(port) != 'number' || port > 65536 || port < 1) {
-                    throw new ConfigParseError(`Config at ${path} specifies invalid TCP port number ${port} for host ${host}.`)
-                }
-            })
+                    // validate each specific port is numeric and < 65536 and < 0
+                    if (typeof(port) != 'number' || port > 65536 || port < 1) {
+                        throw new ConfigParseError(`Config at ${path} specifies invalid ${checkName} port number ${port} for host ${host}.`)
+                    }
+                })
             }
             else {
                 throw new ConfigParseError(`Config at ${path} specifies unknown check type ${checkName} for host ${host}.`)
@@ -98,22 +98,24 @@ async function gatherMetrics(config, database){
         Object.entries(check).forEach(async ([checkName, checkContents]) => {
             if (checkName == 'icmp') {
                 results[host][checkName] = await icmpPing(host).then((pingResponse) => {
-                    // log(`ping output for ${host} was ${pingResponse.output}`)
                     if (database) {
-                        db.writeMetric(database, host, checkName, 0, pingResponse.time, () => {log(`wrote ${checkName} result=${pingResponse.time} to database for ${host}.`)})
+                        db.writeMetric(database, host, checkName, pingResponse.time, () => {log(`wrote ${checkName} result=${pingResponse.time} to database for ${host}.`)})
                     }
                 })
+            } else if (checkName in ['udp', 'tcp']){
+                Object.entries(checkContents).forEach((_, port) => {
+                    connectCheck(host, checkName, port)
+                });
             }
         });
     });
 }
 
-function tcpConnectCheck(host, port) {
-    throw new NotImplementedError(`tcpConnectCheck is not yet implemented. It was called with host=${host}, port=${port}`)
+function connectCheck(host, protocol, port) {
+    log(`connectCheck is not yet implemented. It was called with host=${host}, protocol=${port}, port=${port}`)
 }
 
 module.exports.log = log
 module.exports.icmpPing = icmpPing
 module.exports.readConfig = readConfig
 module.exports.scheduleGatherMetrics = scheduleGatherMetrics
-module.exports.tcpConnectCheck = tcpConnectCheck
