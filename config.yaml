@@ -7,8 +7,25 @@ hosts:
   "localhost":
     icmp: {}
     tcp:
+      - 8080
+  "techcrunch.com":
+    icmp: {}
+    tcp:
       - 443
       - 80
-interval: 1
+  "reddit.com":
+    icmp: {}
+    tcp:
+      - 443
+      - 80
+  "8.8.8.8":
+    icmp: {}
+    tcp:
+      - 53
+  "1.1.1.1":
+    icmp: {}
+    tcp:
+      - 53
+interval: 4
 debug: true
 listenPort: 8080

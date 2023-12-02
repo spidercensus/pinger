@@ -1,6 +1,7 @@
 const express = require('express');
 const app = express();
 
+const common = require('./common')
 const db = require('./db')
 const utils = require('./utils')
 
@@ -13,14 +14,14 @@ app.get('/', (req, res) => {
 });
 
 app.get('/metrics.json', (req, res) => {
-    utils.log(`${req.url} requested from ${req.ip}`)
+    common.log(`${req.url} requested from ${req.ip}`)
     db.dumpMetrics(database, (results) => {
         res.json(results)
     })
 });
 
 app.get('/metrics', (req, res) => {
-    utils.log(`${req.url} requested from ${req.ip}`)
+    common.log(`${req.url} requested from ${req.ip}`)
     db.dumpMetrics(database, (results) => {
         bodyArray = Array(results.length)
         idx = 0 
@@ -33,7 +34,7 @@ app.get('/metrics', (req, res) => {
 });
 
 app.get('/ping/:host', (req, res) => {
-    utils.log(`${req.url} requested from ${req.ip}`)
+    common.log(`${req.url} requested from ${req.ip}`)
     if ('host' in req.params) {
         var result = utils.icmpPing(req.params['host'])
         var responseBody = {
@@ -63,5 +64,5 @@ const config = utils.readConfig(configPath)
 utils.scheduleGatherMetrics(config, database)
 
 app.listen(config['listenPort'], () => {
-  utils.log(`Server listening on port ${config['listenPort']}...`);
+  common.log(`Server listening on port ${config['listenPort']}...`);
 });

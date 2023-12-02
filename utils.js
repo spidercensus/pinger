@@ -1,10 +1,12 @@
 const cron = require('cron');
-const date = require('date-fns');
+
+const dgram = require('dgram')
 const fs   = require('fs');
 const net = require('net')
 const ping = require('ping');
 const yaml = require('js-yaml');
 
+const common = require('./common')
 const db = require('./db')
 
 class ConfigParseError extends Error {
@@ -14,13 +16,7 @@ class ConfigParseError extends Error {
     }
 }
 
-function log(message){
-    message =`${date.format(new Date(), 'MM/dd/yyyy H:m:s:SSS')}: ${message}`
-    console.log(message)
-}
-
 async function icmpPing(host) {
-    log(`icmpPing(${host}) called.`)
     return await ping.promise.probe(host);
 }
 
@@ -83,14 +79,15 @@ function readConfig(path) {
     } else {
         doc['listenPort'] = 8080
     }
-    log(`Config looks good.`)
+    common.log(`Config looks good.`)
     return doc
 }
 
 // Create an interval job to gather metrics
 function scheduleGatherMetrics(config, database){
+    common.log(`gatherMetrics will run every ${config['interval']} seconds`)
     const job = new cron.CronJob(
-        `* * * * * */${config['interval']}`, // cronTime
+        `*/${config['interval']} * * * * *`, // cronTime
         async function() {
             await gatherMetrics(config, database)
         },
@@ -102,23 +99,27 @@ function scheduleGatherMetrics(config, database){
 
 // Gather metrics and write to database
 async function gatherMetrics(config, database){
-    log(`gatherMetrics called`)
-    results = {}
     Object.entries(config['hosts']).forEach(async ([host, check]) => {
-        results[host] = {}
         Object.entries(check).forEach(async ([checkName, checkContents]) => {
             if (checkName == 'icmp') {
-                results[host][checkName] = await icmpPing(host).then((pingResponse) => {
+                icmpPing(host).then((pingResponse) => {
+                    if (config['debug']) {common.log(`icmpPing(${host}) complete`)};
                     if (database) {
-                        db.writeMetric(database, host, checkName, pingResponse.time, () => {log(`wrote ${checkName} result=${pingResponse.time} to database for ${host}.`)})
+                        db.writeMetric(database, host, checkName, pingResponse.time)
                     }
                 })
             } else if (checkName == 'tcp' || checkName == 'udp'){
                 Object.entries(checkContents).forEach(async ([_, port]) => {
-                    await connectCheck(host, checkName, port).then(() =>{
-                        db.writeMetric(database, host, `${checkName}_${port}`, 1)
-                    }).catch(() => {
-                        db.writeMetric(database, host, `${checkName}_${port}`, 0)
+                    connectCheck(host, checkName, port).then((message) =>{
+                        if (config['debug']){common.log(message);}
+                        if (database){
+                            db.writeMetric(database, host, `${checkName}_${port}`, 1)
+                        }
+                    }).catch((message) => {
+                        common.log(message)
+                        if (database){
+                            db.writeMetric(database, host, `${checkName}_${port}`, 0)
+                        }
                     })
                 });
             }
@@ -127,34 +128,27 @@ async function gatherMetrics(config, database){
 }
 
 async function connectCheck(host, protocol, port) {
-    // log(`connectCheck called with host=${host}, protocol=${protocol}, port=${port}`)
     return new Promise((resolve, reject) => {
         if (protocol == 'udp'){
-            log("UDP support not yet implemented.")
-            reject()
+            reject("UDP support not yet implemented.")
         }
         try {
             var client = new net.Socket();
             client.on('error', (error) => {
-                log(`Failed to connect: host=${host}, protocol=${protocol}, port=${port}. ${error}`)
-                reject()
+                reject(`Failed to connect: host=${host}, protocol=${protocol}, port=${port}. ${error}`)
             });
             client.on('timeout', (error) => {
-                log(`Connection time-out: host=${host}, protocol=${protocol}, port=${port}. ${error}`)
-                reject()
+                reject(`Connection time-out: host=${host}, protocol=${protocol}, port=${port}. ${error}`)
             });
             client.connect(port, host, () => {
-                console.log(`Connected to host=${host}, protocol=${protocol}, port=${port}`);
-                resolve()
+                resolve(`Connected to host=${host}, protocol=${protocol}, port=${port}`)
             });
         } catch (error) {
-            log(`Failed to connect to host=${host}, protocol=${protocol}, port=${port}. ${error}`)
-            reject()
+            reject(`Failed to connect to host=${host}, protocol=${protocol}, port=${port}. ${error}`)
         }
     });
 }
 
-module.exports.log = log
 module.exports.icmpPing = icmpPing
 module.exports.readConfig = readConfig
 module.exports.scheduleGatherMetrics = scheduleGatherMetrics
