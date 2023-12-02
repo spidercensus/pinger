@@ -15,8 +15,7 @@ function getDatabase(path) {
 
 function dbKeyForValue(host, check) {
     // tcp443{host="myserver"} 0.951
-    const key = `${check}{host=${host}}`
-    console.log(`dbKeyForValue: ${key}`)
+    const key = `${check}{host="${host}"}`
     return key
 }
 

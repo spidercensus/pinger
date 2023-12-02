@@ -16,6 +16,7 @@
     "fs": "^0.0.1-security",
     "js-yaml": "^4.1.0",
     "level": "^8.0.0",
-    "ping": "^0.4.4"
+    "ping": "^0.4.4",
+    "promise-socket": "^7.0.0"
   }
 }

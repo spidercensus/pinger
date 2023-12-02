@@ -1,6 +1,7 @@
 const cron = require('cron');
 const date = require('date-fns');
 const fs   = require('fs');
+const net = require('net')
 const ping = require('ping');
 const yaml = require('js-yaml');
 
@@ -113,16 +114,44 @@ async function gatherMetrics(config, database){
                     }
                 })
             } else if (checkName == 'tcp' || checkName == 'udp'){
-                Object.entries(checkContents).forEach(([_, port]) => {
-                    connectCheck(host, checkName, port)
+                Object.entries(checkContents).forEach(async ([_, port]) => {
+                    await connectCheck(host, checkName, port).then(() =>{
+                        db.writeMetric(database, host, `${checkName}_${port}`, 1)
+                    }).catch(() => {
+                        db.writeMetric(database, host, `${checkName}_${port}`, 0)
+                    })
                 });
             }
         });
     });
 }
 
-function connectCheck(host, protocol, port) {
-    log(`connectCheck is not yet implemented. It was called with host=${host}, protocol=${protocol}, port=${port}`)
+async function connectCheck(host, protocol, port) {
+    // log(`connectCheck called with host=${host}, protocol=${protocol}, port=${port}`)
+    return new Promise((resolve, reject) => {
+        if (protocol == 'udp'){
+            log("UDP support not yet implemented.")
+            reject()
+        }
+        try {
+            var client = new net.Socket();
+            client.on('error', (error) => {
+                log(`Failed to connect: host=${host}, protocol=${protocol}, port=${port}. ${error}`)
+                reject()
+            });
+            client.on('timeout', (error) => {
+                log(`Connection time-out: host=${host}, protocol=${protocol}, port=${port}. ${error}`)
+                reject()
+            });
+            client.connect(port, host, () => {
+                console.log(`Connected to host=${host}, protocol=${protocol}, port=${port}`);
+                resolve()
+            });
+        } catch (error) {
+            log(`Failed to connect to host=${host}, protocol=${protocol}, port=${port}. ${error}`)
+            reject()
+        }
+    });
 }
 
 module.exports.log = log
