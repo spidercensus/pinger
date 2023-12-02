@@ -11,3 +11,4 @@ hosts:
       - 80
 interval: 1
 debug: true
+listenPort: 8080

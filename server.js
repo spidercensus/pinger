@@ -23,12 +23,11 @@ app.get('/metrics', (req, res) => {
     utils.log(`${req.url} requested from ${req.ip}`)
     db.dumpMetrics(database, (results) => {
         bodyArray = Array(results.length)
-        idx = 0
+        idx = 0 
         Object.entries(results).forEach(([key, value]) => {
             bodyArray[idx] = `${key} ${value}`;
             idx++;
         })
-
         res.send(bodyArray.join("\n"))
     })
 });
@@ -53,21 +52,16 @@ app.get('/ping/:host', (req, res) => {
     }
     else {
         res.json({"error": "Missing host parameter."})
-        // res.send("Missing host parameter.")
     }
 });
-
-// Listen to the App Engine-specified port, or 8080 otherwise
-const PORT = process.env.PORT || 8080;
 
 // Load config from the specified config file path or just use config.yaml.
 const configPath = process.env.CONFIG || 'config.yaml'
 const config = utils.readConfig(configPath)
 
-
 // Schedule gathering of metrics.
 utils.scheduleGatherMetrics(config, database)
 
-app.listen(PORT, () => {
-  utils.log(`Server listening on port ${PORT}...`);
+app.listen(config['listenPort'], () => {
+  utils.log(`Server listening on port ${config['listenPort']}...`);
 });

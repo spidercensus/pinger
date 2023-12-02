@@ -1,5 +1,12 @@
 const level = require('classic-level');
 
+class DatabaseError extends Error {
+    constructor(message) {
+      super(message);
+      this.name = "ConfigParseError";
+    }
+}
+
 function getDatabase(path) {
     path = path || "./pinger-db";
     console.log(`Initializing Level database at ${path}`)
@@ -14,6 +21,9 @@ function dbKeyForValue(host, check) {
 }
 
 async function writeMetric(db, host, check, value, callback) {
+    if (typeof(value) != 'number') {
+        throw new DatabaseError(`Tried to write non-number value ${value} to database.`)
+    }
     return await db.put(dbKeyForValue(host, check), value, callback);
 }
 

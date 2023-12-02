@@ -12,12 +12,6 @@ class ConfigParseError extends Error {
       this.name = "ConfigParseError";
     }
 }
-class NotImplementedError extends Error {
-    constructor(message) {
-      super(message);
-      this.name = "NotImplementedError";
-    }
-}
 
 function log(message){
     message =`${date.format(new Date(), 'MM/dd/yyyy H:m:s:SSS')}: ${message}`
@@ -27,6 +21,13 @@ function log(message){
 async function icmpPing(host) {
     log(`icmpPing(${host}) called.`)
     return await ping.promise.probe(host);
+}
+
+function isValidPort(port) {
+    if (typeof(port) != 'number' || port < 1 || port > 65535) {
+        return false
+    }
+    return true
 }
 
 // Read config from file
@@ -48,7 +49,7 @@ function readConfig(path) {
             else if (checkName == "tcp" || checkName == "udp") {
                 Object.entries(checkContents).forEach(([_, port]) => {
                     // validate each specific port is numeric and < 65536 and < 0
-                    if (typeof(port) != 'number' || port > 65536 || port < 1) {
+                    if (!isValidPort(port)) {
                         throw new ConfigParseError(`Config at ${path} specifies invalid ${checkName} port number ${port} for host ${host}.`)
                     }
                 })
@@ -65,12 +66,21 @@ function readConfig(path) {
     } else {
         doc['interval'] = 10
     }
+
     if ('debug' in doc) {
         if (typeof(doc['debug']) != 'boolean') {
             throw new ConfigParseError(`Config at ${path} specifies unknown debug value ${doc['debug']}`)
         }
     } else {
         doc['debug'] = false
+    }
+
+    if ('listenPort' in doc) {
+        if (!isValidPort(doc['listenPort'])) {
+            throw new ConfigParseError(`Config at ${path} specifies invalid listenPort number ${doc['listenPort']}}.`)
+        }
+    } else {
+        doc['listenPort'] = 8080
     }
     log(`Config looks good.`)
     return doc
