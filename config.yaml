@@ -9,3 +9,5 @@ hosts:
     tcp:
       - 443
       - 80
+interval: 1
+debug: true

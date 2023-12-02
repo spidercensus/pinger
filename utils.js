@@ -1,8 +1,10 @@
-const date = require('date-fns')
+const cron = require('cron');
+const date = require('date-fns');
 const fs   = require('fs');
-var net = require('net');
 const ping = require('ping');
 const yaml = require('js-yaml');
+
+const db = require('./db')
 
 class ConfigParseError extends Error {
     constructor(message) {
@@ -23,8 +25,8 @@ function log(message){
 }
 
 async function icmpPing(host) {
-    let resp = await ping.promise.probe(host);
-    return resp
+    log(`icmpPing(${host}) called.`)
+    return await ping.promise.probe(host);
 }
 
 // Read config from file
@@ -37,15 +39,9 @@ function readConfig(path) {
     }
     if (!('hosts' in doc)) {
         throw new ConfigParseError(`Config at ${path} is missing key hosts`)
-        return {}
     }
     Object.entries(doc['hosts']).forEach(([host, check]) => {
         Object.entries(check).forEach(([checkName, checkContents]) => {
-            if ('interval' in checkContents) {
-                if (typeof(checkContents['interval']) != 'number' || checkContents['interval'] < 1) {
-                    throw new ConfigParseError(`Config at ${path} specifies invalid timeout for ${check} on host ${host}.`)
-                }
-            }
             if (checkName == "icmp") {
                 // no problem.
             }
@@ -62,8 +58,54 @@ function readConfig(path) {
             }
         })
     })
+    if ('interval' in doc) {
+        if (typeof(doc['interval']) != 'number' || doc['interval'] < 1){
+            throw new ConfigParseError(`Config at ${path} specifies unknown interval value ${doc['interval']}`)
+        }
+    } else {
+        doc['interval'] = 10
+    }
+    if ('debug' in doc) {
+        if (typeof(doc['debug']) != 'boolean') {
+            throw new ConfigParseError(`Config at ${path} specifies unknown debug value ${doc['debug']}`)
+        }
+    } else {
+        doc['debug'] = false
+    }
     log(`Config looks good.`)
     return doc
+}
+
+// Create an interval job to gather metrics
+function scheduleGatherMetrics(config, database){
+    const job = new cron.CronJob(
+        `* * * * * */${config['interval']}`, // cronTime
+        async function() {
+            await gatherMetrics(config, database)
+        },
+        null, // onComplete
+        true, // start
+        'America/Denver' // timeZone
+    );
+}
+
+// Gather metrics and write to database
+async function gatherMetrics(config, database){
+    log(`gatherMetrics called`)
+    results = {}
+    Object.entries(config['hosts']).forEach(async ([host, check]) => {
+        results[host] = {}
+        Object.entries(check).forEach(async ([checkName, checkContents]) => {
+            if (checkName == 'icmp') {
+                results[host][checkName] = await icmpPing(host).then((pingResponse) => {
+                    // log(`ping output for ${host} was ${pingResponse.output}`)
+                    if (database) {
+                        db.writeMetric(database, host, checkName, 0, pingResponse.time, () => {log(`wrote ${checkName} result=${pingResponse.time} to database for ${host}.`)})
+                    }
+                })
+            }
+        });
+    });
 }
 
 function tcpConnectCheck(host, port) {
@@ -73,4 +115,5 @@ function tcpConnectCheck(host, port) {
 module.exports.log = log
 module.exports.icmpPing = icmpPing
 module.exports.readConfig = readConfig
+module.exports.scheduleGatherMetrics = scheduleGatherMetrics
 module.exports.tcpConnectCheck = tcpConnectCheck

@@ -12,21 +12,28 @@ function dbKeyForValue(host, check, check_port) {
     return key
 }
 
+// async function writeMetric(db, host, check, value, callback) {
+//     return await writeMetric(db, host, check, check_port, 0, value, callback)
+// }
 async function writeMetric(db, host, check, check_port, value, callback) {
     const key = dbKeyForValue(host, check, check_port);
-    let result = await db.put(key, value, callback);
+    return await db.put(key, value, callback);
 }
 
 async function getMetric(db, host, check, check_port, callback) {
     const key = dbKeyForValue(host, check, check_port);
-    let result = await db.get(key, callback);
+    return await db.get(key, callback);
 }
 
 async function dumpMetrics(db, callback) {
     let values = {}
     for await (const [key, value] of db.iterator()) {
-        values[key = value]
+        values[key] = value
     }
-    console.log(`dumpMetrics found: ${values}`)
     callback(values)
 }
+
+module.exports.dumpMetrics = dumpMetrics
+module.exports.getDatabase = getDatabase
+module.exports.getMetric = getMetric
+module.exports.writeMetric = writeMetric

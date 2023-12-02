@@ -1,17 +1,23 @@
 const express = require('express');
 const app = express();
+
+const db = require('./db')
 const utils = require('./utils')
+
+// Instantiate an in-memory datastore
+const database = db.getDatabase()
 
 // Define routes.
 app.get('/', (req, res) => {
-  res.send('OK');
+    res.send('OK');
 });
 
-app.get('/metrics', (req, res) => {
-  utils.log(`${req.url} requested from ${req.ip}`)
-  
-  res.send(`Hello ${req.ip}`);
-  // retrieve metrics and display them here.
+app.get('/metrics.json', (req, res) => {
+    utils.log(`${req.url} requested from ${req.ip}`)
+    db.dumpMetrics(database, (results) => {
+        res.json(results)
+    })
+
 });
 
 app.get('/ping/:host', (req, res) => {
@@ -46,10 +52,9 @@ const configPath = process.env.CONFIG || 'config.yaml'
 const config = utils.readConfig(configPath)
 
 
-// @TODO Instantiate an in-memory datastore
-
-// @TODO Use the config to instantiate a couple of workers.
+// Schedule gathering of metrics.
+utils.scheduleGatherMetrics(config, database)
 
 app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}...`);
+  utils.log(`Server listening on port ${PORT}...`);
 });
