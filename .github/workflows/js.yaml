@@ -21,5 +21,6 @@ jobs:
           npm install
       - name: Node lint
         run: |
+          cd js
           npm run lint
       - run: echo "🍏 This job's status is ${{ job.status }}."
