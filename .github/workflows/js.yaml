@@ -1,8 +1,8 @@
-name: GitHub Actions Demo
-run-name: ${{ github.actor }} is testing out GitHub Actions 🚀
+name: Test JS code
+run-name: ${{ github.ref }}-js-${{ github.actor }}🚀
 on: [push]
 jobs:
-  Explore-GitHub-Actions:
+  Build-and-test:
     runs-on: ubuntu-latest
     steps:
       - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
@@ -15,4 +15,11 @@ jobs:
       - name: List files in the repository
         run: |
           ls ${{ github.workspace }}
+      - name: Install the node dependencies
+        run: |
+          cd js
+          npm install
+      - name: Node lint
+        run: |
+          npm run lint
       - run: echo "🍏 This job's status is ${{ job.status }}."
