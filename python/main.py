@@ -7,16 +7,15 @@ from pinger.cfg import loadConfigFile
 
 def getCmdLine() -> Dict:
     parser = ArgumentParser(
-        prog='Pinger',
-        description='Check up on things.',
-        epilog='A spidercensus joint'
+        prog="Pinger", description="Check up on things.", epilog="A spidercensus joint"
     )
-    parser.add_argument('-c', '--config-file', default='config.yaml')
+    parser.add_argument("-c", "--config-file", default="config.yaml")
     return parser.parse_args(argv[1:]).__dict__
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     args = getCmdLine()
-    config = loadConfigFile(args['config_file'])
+    config = loadConfigFile(args["config_file"])
     from pprint import pprint
+
     pprint(config)
