@@ -1,0 +1,33 @@
+name: Build and test Python
+run-name: ${{ github.ref }}-python-${{ github.actor }}🚀
+on: [push]
+jobs:
+  Print-information:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
+      - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
+      - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
+  Install-and-Flake8:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.x
+
+    - name: Create virtual environment
+      run: python -m venv venv
+
+    - name: Activate virtual environment
+      run: source venv/bin/activate
+
+    - name: Install dependencies
+      run: pip install -r python/requirements.txt
+
+    - name: Run Flake8
+      run: flake8 python/
