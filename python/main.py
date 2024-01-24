@@ -4,6 +4,7 @@ from typing import Dict
 
 from pinger.cfg import loadConfigFile
 
+
 def getCmdLine() -> Dict:
     parser = ArgumentParser(
         prog='Pinger',
@@ -13,8 +14,8 @@ def getCmdLine() -> Dict:
     parser.add_argument('-c', '--config-file', default='config.yaml')
     return parser.parse_args(argv[1:]).__dict__
 
-if __name__=='__main__':
-    # Parse command-line arguments and grab config file, else default to config.yaml.
+
+if __name__ == '__main__':
     args = getCmdLine()
     config = loadConfigFile(args['config_file'])
     from pprint import pprint

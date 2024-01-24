@@ -10,8 +10,9 @@ def loadYaml(filename: str) -> Dict:
         with open(filename, 'r') as file:
             data = load(file, Loader)
     except Exception as e:
-        logging.exception(f"Failed to load config file {filename}. Exception: {e}.\nStarting with empty config.")
-
+        logging.exception(f"Failed to load config file {filename}.\n"
+                          f"Exception: {e}.\n"
+                          f"Starting with empty config.")
     return data
 
 
